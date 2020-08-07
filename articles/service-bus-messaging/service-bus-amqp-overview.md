@@ -1,22 +1,10 @@
 ---
-title: Overview of AMQP 1.0 in Azure Service Bus | Microsoft Docs
-description: Learn about using the Advanced Message Queuing Protocol (AMQP) 1.0 in Azure.
-services: service-bus-messaging
-documentationcenter: .net
-author: sethmanheim
-manager: timlt
-editor: ''
-
-ms.assetid: 0e8d19cc-de36-478e-84ae-e089bbc2d515
-ms.service: service-bus-messaging
-ms.workload: na
-ms.tgt_pltfrm: na
-ms.devlang: multiple
+title: Overview of AMQP 1.0 in Azure Service Bus
+description: Learn how Azure Service Bus supports Advanced Message Queuing Protocol (AMQP), an open standard protocol.
 ms.topic: article
-ms.date: 01/30/2018
-ms.author: sethm
-
+ms.date: 06/23/2020
 ---
+
 # AMQP 1.0 support in Service Bus
 Both the Azure Service Bus cloud service and on-premises [Service Bus for Windows Server (Service Bus 1.1)](https://msdn.microsoft.com/library/dn282144.aspx) support the Advanced Message Queueing Protocol (AMQP) 1.0. AMQP enables you to build cross-platform, hybrid applications using an open standard protocol. You can construct applications using components that are built using different languages and frameworks, and that run on different operating systems. All these components can connect to Service Bus and seamlessly exchange structured business messages efficiently and at full fidelity.
 
@@ -61,7 +49,7 @@ AMQP 1.0 support in Azure Service Bus means that you can now leverage the Servic
 
 The following figure illustrates an example deployment in which Java clients running on Linux, written using the standard Java Message Service (JMS) API and .NET clients running on Windows, exchange messages via Service Bus using AMQP 1.0.
 
-![][0]
+![Diagram showing one Service Bus exchanging messages with two Linux environments and two Windows environments.][0]
 
 **Figure 1: Example deployment scenario showing cross-platform messaging using Service Bus and AMQP 1.0**
 
@@ -73,7 +61,7 @@ At this time the following client libraries are known to work with Service Bus:
 | C |Apache Qpid Proton-C |
 | PHP |Apache Qpid Proton-PHP |
 | Python |Apache Qpid Proton-Python |
-| C# |AMQP .Net Lite |
+| C# |AMQP .NET Lite |
 
 **Figure 2: Table of AMQP 1.0 client libraries**
 

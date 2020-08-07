@@ -1,100 +1,61 @@
 ---
-title: How to fail back from Azure to VMware with Azure Site Recovery | Microsoft Docs
-description: After failover of virtual machines to Azure, you can initiate a failback to bring virtual machines back to on-premises. Learn the steps for how to fail back.
-services: site-recovery
-author: nsoneji
-manager: gauravd
+title: Fail back VMware VMs/physical servers from Azure with Azure Site Recovery 
+description: Learn how to fail back to the on-premises site after failover to Azure, during disaster recovery of VMware VMs and physical servers to Azure.
+author: mayurigupta13
+manager: rochakm
 ms.service: site-recovery
-ms.topic: article
-ms.date: 03/05/2018
-ms.author: nisoneji
+ms.date: 01/15/2019
+ms.topic: conceptual
+ms.author: mayg
 
 ---
-# Fail back from Azure to an on-premises site
+# Fail back VMware VMs to on-premises site
 
-This article describes how to fail back virtual machines from Azure Virtual Machines to on-premises VMware environment. Follow the instructions in this article to fail back your VMware virtual machines or Windows/Linux physical servers after they've failed over from the on-premises site to Azure by using the [Failover in Site Recovery](site-recovery-failover.md) tutorial.
+This article describes how to fail back Azure VMs to an on-premises site, following [failover](site-recovery-failover.md) of on-premises VMs to Azure with [Azure Site Recovery](site-recovery-overview.md). After failback to on-premises, you enable replication so that the on-premises VMs start replicating to Azure.
 
-## Prerequisites
-- Ensure that you have read the details about the [different types of failback](concepts-types-of-failback.md) and corresponding caveats.
+## Before you start
 
-> [!WARNING]
-> You cannot failback after you have either [completed migration](migrate-overview.md#what-do-we-mean-by-migration), moved a virtual machine to another resource group, or deleted the Azure virtual machine. If you disable protection of the virtual machine, you cannot failback.
-
-> [!WARNING]
-> A Windows Server 2008 R2 SP1 physical server, if protected and failed over to Azure, cannot be failed back.
-
-> [!NOTE]
-> If you have failed over VMware virtual machines then you cannot failback to a Hyper-v host.
+1. Learn about [VMware failback](failover-failback-overview.md#vmwarephysical-reprotectionfailback). 
+2. Make sure you've reviewed and completed the steps to [prepare for failback](vmware-azure-prepare-failback.md), and that all the required components are deployed. Components include a process server in Azure, an on-premises master target server, and a VPN site-to-site connection (or ExpressRoute private peering) for failback.
+3. Make sure you've completed the [requirements](vmware-azure-reprotect.md#before-you-begin) for reprotection and failback, and that you've [enabled reprotection](vmware-azure-reprotect.md#enable-reprotection) of Azure VMs, so that they're replicating from Azure to the on-premises site. VMs must be in a replicated state is order to fail back.
 
 
-- Before you proceed, complete the reprotect steps so that the virtual machines are in a replicated state, and you can initiate a failover back to an on-premises site. For more information, see [How to reprotect from Azure to on-premises](vmware-azure-reprotect.md).
-
-- Make sure that the vCenter is in a connected state before you do a failback. Otherwise, disconnecting disks and attaching them back to the virtual machine fails.
-
-- During failover to Azure, the on-premises site may not be accessible and hence the configuration server may be either unavailable or shutdown. During reprotect and failback, the on-premises configuration server should be running and in a connected OK state. 
-
-- During failback, the virtual machine must exist in the configuration server database, or failback won't succeed. Therefore, ensure that you take regularly scheduled backups of your server. If there was a disaster, you need to restore the server with the original IP address, for failback to work.
-
-- The master target server should not have any snapshots before triggering reprotect/failback.
-
-## Overview of failback
-After you have failed over to Azure, you can fail back to your on-premises site by executing the following steps:
-
-1. [Reprotect](vmware-azure-reprotect.md) the virtual machines on Azure so that they start to replicate to VMware virtual machines in your on-premises site. As part of this process, you also need to:
-	1. Set up an on-premises master target: Windows master target for Windows virtual machines and [Linux master target](vmware-azure-install-linux-master-target.md) for Linux virtual machines.
-	2. Set up a [process server](vmware-azure-set-up-process-server-azure.md).
-	3. Initiate [reprotect](vmware-azure-reprotect.md). This will turn off the on-premises virtual machine and synchronize the Azure virtual machine's data with the on-premises disks.
-
-1. Once your virtual machines on Azure are replicating to your on-premises site, you initiate a fail over from Azure to the on-premises site.
-
-1. After your data has failed back, you reprotect the on-premises virtual machines again, so that they start replicating to Azure.
-
-For a quick overview, watch the following video about how to fail back to an on-premises site.
-> [!VIDEO https://channel9.msdn.com/Series/Azure-Site-Recovery/VMware-to-Azure-with-ASR-Video5-Failback-from-Azure-to-On-premises/player]
 
 
-## Steps to fail back
+## Run a failover to fail back
 
-> [!IMPORTANT]
-> Before you initiate failback, ensure that you have completed reprotection of the virtual machines. The virtual machines should be in a protected state, and their health should be **OK**. To reprotect the virtual machines, read [how to reprotect](vmware-azure-reprotect.md).
-
-1. In the replicated items page, select the virtual machine, and right-click it to select **Unplanned Failover**.
-2. In **Confirm Failover**, verify the failover direction (from Azure), and then select the recovery point (latest, or the latest app consistent) that you want to use for the failover. The app consistent point is behind the latest point in time and causes some data loss.
-3. During failover, Site Recovery shuts down the virtual machines on Azure. After you check that failback has completed as expected, you can check that the virtual machines on Azure have been shut down.
-4. **Commit** is required to remove the failed over virtual machine from Azure.Right-click the protected item, and then click **Commit**. A job will remove the failed over virtual machines in Azure.
-
-
-## To what recovery point can I fail back the virtual machines?
-
-During failback, you have two options to fail back the virtual machine/recovery plan.
-
-- If you select the latest processed point in time, all virtual machines will be failed over to their latest available point in time. In case, there is a replication group within the recovery plan, then each virtual machine of the replication group will fail over to its independent latest point in time.
-
-    You cannot fail back a virtual machine until it has at least one recovery point. You cannot fail back a recovery plan until all its virtual machines have at least one recovery point.
+1. Make sure that Azure VMs are reprotected and replicating to the on-premises site.
+    - A VM needs at least one recovery point in order to fail back.
+    - If you fail back a recovery plan, then all machines in the plan should have at least one recovery point.
+2. In the vault > **Replicated items**, select the VM. Right-click the VM > **Unplanned Failover**.
+3. In **Confirm Failover**, verify the failover direction (from Azure).
+4. Select the recovery point that you want to use for the failover.
+    - We recommend that you use the **Latest** recovery point. The app-consistent point is behind the latest point in time, and causes some data loss.
+    - **Latest** is a crash-consistent recovery point.
+    - With **Latest**, a VM fails over to its latest available point in time. If you have a replication group for multi-VM consistency within a recovery plan, each VM in the group fails over to its independent latest point in time.
+    - If you use an app-consistent recovery point, each VM fails back to its latest available point. If a recovery plan has a replication group, each group recovers to its common available recovery point.
+5. Failover begins. Site Recovery shuts down the Azure VMs.
+6. After failover completes, check everything's working as expected. Check that the Azure VMs are shut down. 
+7. With everything verified, right-click  the VM > **Commit**, to finish the failover process. Commit removes the failed-over Azure VM. 
 
 > [!NOTE]
-> A latest recovery point is a crash-consistent recovery point.
+> For Windows VMs, Site Recovery disables the VMware tools during failover. During failback of the Windows VM, the VMware tools are enable again. 
 
-- If you select the application consistent recovery point, a single virtual machine failback recovers to its latest available application-consistent recovery point. In the case of a recovery plan with a replication group, each replication group recovers to its common available recovery point.
-Application-consistent recovery points can be behind in time, and there might be loss in data.
 
-## What happens to VMware tools post failback?
-
-In case of a Windows  virtual machine, Azure Site Recovery disables the VMware tools during failover. During failback of the Windows virtual machine, the VMware tools are re-enabled. 
 
 
 ## Reprotect from on-premises to Azure
-After failback finishes and you have initiated commit the recovered virtual machines in Azure are deleted. Now, the virtual machine is back on the on-premises site, but it won’t be protected. To start to replicate to Azure again, do the following:
 
-1. In **Vault** > **Setting** > **Replicated items**, select the virtual machines that have failed back, and then click **Re-Protect**.
-2. Give the value of the process server that needs to be used to send data back to Azure.
-3. Click **OK** to begin the reprotect job.
+After committing the failback, the Azure VMs are deleted. The VM is back in the on-premises site, but it isn't protected. To start replicating VMs to Azure again,as follows:
+
+1. In the vault > **Replicated items**, select failed back VMs, and then select **Re-Protect**.
+2. Specify the process server that's used to send data back to Azure.
+3. Select **OK** to begin the reprotect job.
 
 > [!NOTE]
-> After an on-premises virtual machine boots up, it takes some time for the agent to register back to the configuration server (up to 15 minutes). During this time, reprotect fails and returns an error message stating that the agent is not installed. Wait for a few minutes, and then try reprotect again.
+> After an on-premises VM starts, it takes up to 15 minutes for the agent to register back to the configuration server. During this time, reprotect fails and returns an error message stating that the agent isn't installed. If this occurs, wait for a few minutes, and reprotect.
 
 ## Next steps
 
-After the reprotect job finishes, the virtual machine is replicating back to Azure, and you can do a [failover](site-recovery-failover.md) to move your virtual machines to Azure again.
-
+After the reprotect job finishes, the on-premises VM is replicating to Azure. As needed, you can [run another failover](site-recovery-failover.md) to Azure.
 

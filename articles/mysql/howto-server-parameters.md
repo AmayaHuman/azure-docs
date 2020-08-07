@@ -1,72 +1,78 @@
 ---
-title: How To Configure Server Parameters in Azure Database for MySQL
+title: Configure server parameters - Azure portal - Azure Database for MySQL
 description: This article describes how to configure MySQL server parameters in Azure Database for MySQL using the Azure portal.
-services: mysql
 author: ajlam
 ms.author: andrela
-manager: kfile
-editor: jasonwhowell
-ms.service: mysql-database
-ms.topic: article
-ms.date: 02/28/2018
+ms.service: mysql
+ms.topic: how-to
+ms.date: 6/11/2020
 ---
 
-# How to configure server parameters in Azure Database for MySQL by using the Azure portal
+# Configure server parameters in Azure Database for MySQL using the Azure portal
 
-Azure Database for MySQL supports configuration of some server parameters. This article describes how to configure these parameters by using the Azure portal. Not all server parameters can be adjusted. 
+Azure Database for MySQL supports configuration of some server parameters. This article describes how to configure these parameters by using the Azure portal. Not all server parameters can be adjusted.
 
-## Navigate to Server Parameters on Azure portal
+## Configure server parameters
+
 1. Sign in to the Azure portal, then locate your Azure Database for MySQL server.
-2. Under the **SETTINGS** section, click **Server parameters** to open the 
-Server parameters page for the Azure Database for MySQL.
+2. Under the **SETTINGS** section, click **Server parameters** to open the server parameters page for the Azure Database for MySQL server.
 ![Azure portal server parameters page](./media/howto-server-parameters/auzre-portal-server-parameters.png)
-3. Locate any settings you need to adjust. Review the **Description** column to understand the purpose and allowed values. 
+3. Locate any settings you need to adjust. Review the **Description** column to understand the purpose and allowed values.
 ![Enumerate drop down](./media/howto-server-parameters/3-toggle_parameter.png)
 4. Click  **Save** to save your changes.
 ![Save or Discard changes](./media/howto-server-parameters/4-save_parameters.png)
 5. If you have saved new values for the parameters, you can always revert everything back to the default values by selecting **Reset all to default**.
 ![Reset all to default](./media/howto-server-parameters/5-reset_parameters.png)
 
+## Setting parameters not listed
 
-## List of configurable server parameters
+If the server parameter you want to update is not listed in the Azure portal, you can optionally set the parameter at the connection level using `init_connect`. This sets the server parameters for each client connecting to the server. 
 
-The list of supported server parameters is constantly growing. Use the server parameters tab in Azure portal to get the definition and configure server parameters based on your application requirements. 
+1. Under the **SETTINGS** section, click **Server parameters** to open the server parameters page for the Azure Database for MySQL server.
+2. Search for `init_connect`
+3. Add the server parameters in the format: `SET parameter_name=YOUR_DESIRED_VALUE` in value the value column.
 
-## Nonconfigurable server parameters
-InnoDB Buffer Pool and Max Connections are not configurable and tied to your [pricing tier](concepts-service-tiers.md). 
+    For example, you can change the character set of your server by setting of `init_connect` to `SET character_set_client=utf8;SET character_set_database=utf8mb4;SET character_set_connection=latin1;SET character_set_results=latin1;`
+4. Click **Save** to save your changes.
 
-|**Pricing Tier**| **Compute Generation**|**vCore(s)**|**InnoDB Buffer Pool (MB)**| **Max Connections**|
-|---|---|---|---|--|
-|Basic| Gen 4| 1| 1024| 50 |
-|Basic| Gen 4| 2| 2560| 100 |
-|Basic| Gen 5| 1| 1024| 50 |
-|Basic| Gen 5| 2| 2560| 100 |
-|General Purpose| Gen 4| 2| 2560| 200|
-|General Purpose| Gen 4| 4| 5120| 400|
-|General Purpose| Gen 4| 8| 10240| 800|
-|General Purpose| Gen 4| 16| 20480| 1600|
-|General Purpose| Gen 4| 32| 40960| 3200|
-|General Purpose| Gen 5| 2| 2560| 200|
-|General Purpose| Gen 5| 4| 5120| 400|
-|General Purpose| Gen 5| 8| 10240| 800|
-|General Purpose| Gen 5| 16| 20480| 1600|
-|General Purpose| Gen 5| 32| 40960| 3200|
-|Memory Optimized| Gen 5| 2| 7168| 600|
-|Memory Optimized| Gen 5| 4| 15360| 1250|
-|Memory Optimized| Gen 5| 8| 30720| 2500|
-|Memory Optimized| Gen 5| 16| 62464| 5000|
-|Memory Optimized| Gen 5| 32| 125952| 10000| 
+## Working with the time zone parameter
 
-These additional server parameters are not configurable in the system:
+### Populating the time zone tables
 
-|**Parameter**|**Fixed value**|
-| :------------------------ | :-------- |
-|innodb_file_per_table in Basic tier|OFF|
-|innodb_flush_log_at_trx_commit|1|
-|sync_binlog|1|
-|innodb_log_file_size|512MB|
+The time zone tables on your server can be populated by calling the `mysql.az_load_timezone` stored procedure from a tool like the MySQL command line or MySQL Workbench.
 
-Other server parameters that are not listed here are set to their MySQL out-of-box default values for versions [5.7](https://dev.mysql.com/doc/refman/5.7/en/innodb-parameters.html) and [5.6](https://dev.mysql.com/doc/refman/5.6/en/innodb-parameters.html).
+> [!NOTE]
+> If you are running the `mysql.az_load_timezone` command from MySQL Workbench, you may need to turn off safe update mode first using `SET SQL_SAFE_UPDATES=0;`.
+
+```sql
+CALL mysql.az_load_timezone();
+```
+
+> [!IMPORTANT]
+> You should restart the server to ensure the time zone tables are properly populated. To restart the server, use the [Azure portal](howto-restart-server-portal.md) or [CLI](howto-restart-server-cli.md).
+
+To view available time zone values, run the following command:
+
+```sql
+SELECT name FROM mysql.time_zone_name;
+```
+
+### Setting the global level time zone
+
+The global level time zone can be set from the **Server parameters** page in the Azure portal. The below sets the global time zone to the value "US/Pacific".
+
+![Set time zone parameter](./media/howto-server-parameters/timezone.png)
+
+### Setting the session level time zone
+
+The session level time zone can be set by running the `SET time_zone` command from a tool like the MySQL command line or MySQL Workbench. The example below sets the time zone to the **US/Pacific** time zone.
+
+```sql
+SET time_zone = 'US/Pacific';
+```
+
+Refer to the MySQL documentation for [Date and Time Functions](https://dev.mysql.com/doc/refman/5.7/en/date-and-time-functions.html#function_convert-tz).
 
 ## Next steps
+
 - [Connection libraries for Azure Database for MySQL](concepts-connection-libraries.md).
